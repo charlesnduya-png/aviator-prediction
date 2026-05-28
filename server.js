@@ -9,7 +9,7 @@ const ROOT = __dirname;
 const NO_BROWSER =
   process.env.NO_BROWSER === "1" ||
   process.argv.includes("--no-browser");
-const LIVE_SESSION_HOURS = [9, 14, 21];
+const LIVE_SESSION_HOURS = [9, 14, 16];
 const LIVE_SESSION_DURATION_MIN = 60;
 const PRELIVE_CODE_WINDOW_MIN = 20;
 const WHATSAPP_PUSH_WEBHOOK = process.env.WHATSAPP_PUSH_WEBHOOK || "";

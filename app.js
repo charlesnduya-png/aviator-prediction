@@ -14,9 +14,10 @@ const ODIBETS_AVIATOR_URL = "https://odibets.com";
 
 const TICK_MS = 3000;
 const ROUND_MS = 5000;
-const LIVE_SESSION_HOURS = [9, 14, 21];
+const LIVE_SESSION_HOURS = [9, 14, 16];
 const LIVE_SESSION_DURATION_MIN = 60;
 const PRELIVE_CODE_WINDOW_MIN = 20;
+const HIGH_SIGNAL_CHANCE = 0.24;
 
 const PLATFORMS = {
   janta: {
@@ -161,12 +162,22 @@ function predictNextCrash(cfg, history, isJanta = false) {
     (history[history.length - 1] || 2) * 0.25 +
     rand(cfg.crashRange[0], cfg.crashRange[1]) * 0.35;
   if (isJanta) predicted *= rand(1.02, 1.12);
+  const highSignal = Math.random() < HIGH_SIGNAL_CHANCE;
+  if (highSignal) {
+    const topBand = rand(cfg.crashRange[1] * 0.82, cfg.crashRange[1] * 1.04);
+    predicted = Math.max(predicted, topBand);
+  }
   predicted = clamp(predicted, 1.15, cfg.crashRange[1]);
   return {
     crash: parseFloat(predicted.toFixed(2)),
-    pattern,
-    momentum: clamp((momentum / cfg.crashRange[1]) * 100, 20, 95),
-    volatility: clamp(rand(18, 55) + (isJanta ? 0 : 12), 15, 78),
+    pattern: highSignal ? clamp(pattern + rand(6, 14), 42, 98) : pattern,
+    momentum: highSignal
+      ? clamp((momentum / cfg.crashRange[1]) * 100 + rand(8, 18), 20, 98)
+      : clamp((momentum / cfg.crashRange[1]) * 100, 20, 95),
+    volatility: highSignal
+      ? clamp(rand(14, 34) + (isJanta ? 0 : 8), 12, 60)
+      : clamp(rand(18, 55) + (isJanta ? 0 : 12), 15, 78),
+    highSignal,
   };
 }
 
@@ -174,6 +185,12 @@ function getConfidence(cfg, pattern, volatility, isJanta = false) {
   const adj = pattern * 0.22 - volatility * 0.15 + rand(-4, 8);
   const max = isJanta ? 92 : 82;
   return clamp(cfg.confidenceBase + adj, 52, max);
+}
+
+function boostConfidence(confidence, highSignal, isJanta = false) {
+  if (!highSignal) return confidence;
+  const max = isJanta ? 97 : 95;
+  return clamp(confidence + rand(8, 16), 60, max);
 }
 
 function safeCashout(crash, confidence) {
@@ -381,11 +398,11 @@ function computeRoomPrediction(roomId) {
   if (!roomState.history.length) {
     roomState.history = generateHistory(cfg);
   }
-  const { crash, pattern, momentum, volatility } = predictNextCrash(
+  const { crash, pattern, momentum, volatility, highSignal } = predictNextCrash(
     cfg,
     roomState.history
   );
-  const confidence = getConfidence(cfg, pattern, volatility);
+  const confidence = boostConfidence(getConfidence(cfg, pattern, volatility), highSignal, false);
   const result = {
     roomId,
     name: cfg.name,
@@ -408,8 +425,8 @@ function updateExtraBook(id) {
   const cfg = EXTRA_BOOKS[id];
   const box = state.extra[id];
   if (!box.history.length) box.history = generateHistory(cfg);
-  const { crash, pattern, momentum, volatility } = predictNextCrash(cfg, box.history);
-  const confidence = getConfidence(cfg, pattern, volatility);
+  const { crash, pattern, momentum, volatility, highSignal } = predictNextCrash(cfg, box.history);
+  const confidence = boostConfidence(getConfidence(cfg, pattern, volatility), highSignal, false);
   const winIndex = parseFloat(computeWinIndex(cfg, confidence, pattern));
   const cashout = safeCashout(crash, confidence);
   const risk = riskLabel(confidence, false);
@@ -537,12 +554,12 @@ function updateJanta() {
   const cfg = PLATFORMS.janta;
   if (!state.janta.history.length) state.janta.history = generateHistory(cfg);
 
-  const { crash, pattern, momentum, volatility } = predictNextCrash(
+  const { crash, pattern, momentum, volatility, highSignal } = predictNextCrash(
     cfg,
     state.janta.history,
     true
   );
-  const confidence = getConfidence(cfg, pattern, volatility, true);
+  const confidence = boostConfidence(getConfidence(cfg, pattern, volatility, true), highSignal, true);
   const cashout = safeCashout(crash, confidence);
   const winIndex = computeWinIndex(cfg, confidence, pattern);
   const risk = riskLabel(confidence, true);
