@@ -8,6 +8,9 @@ const BETIKA_AVIATOR_URL = "https://www.betika.com/en-ke/aviator";
 
 /** Official Janta.ke Aviator — top-rated platform in this app */
 const JANTA_AVIATOR_URL = "https://janta.ke/home/game/aviator";
+const SPORTPESA_AVIATOR_URL = "https://www.sportpesa.co.ke";
+const MOZZART_AVIATOR_URL = "https://www.mozzartbet.co.ke";
+const ODIBETS_AVIATOR_URL = "https://odibets.com";
 
 const TICK_MS = 3000;
 const ROUND_MS = 5000;
@@ -24,6 +27,35 @@ const PLATFORMS = {
     lowCrashWeight: 0.22,
   },
 };
+
+const EXTRA_BOOKS = {
+  sportpesa: {
+    name: "SportPesa",
+    url: SPORTPESA_AVIATOR_URL,
+    winBias: 1.01,
+    confidenceBase: 59,
+    crashRange: [1.18, 3.7],
+    lowCrashWeight: 0.33,
+  },
+  mozzart: {
+    name: "Mozzart",
+    url: MOZZART_AVIATOR_URL,
+    winBias: 1.03,
+    confidenceBase: 60,
+    crashRange: [1.2, 3.9],
+    lowCrashWeight: 0.31,
+  },
+  odibets: {
+    name: "Odibets",
+    url: ODIBETS_AVIATOR_URL,
+    winBias: 0.99,
+    confidenceBase: 57,
+    crashRange: [1.12, 3.6],
+    lowCrashWeight: 0.35,
+  },
+};
+
+const EXTRA_IDS = ["sportpesa", "mozzart", "odibets"];
 
 const BETIKA_ROOMS = {
   room1: {
@@ -66,6 +98,11 @@ const state = {
       room2: { history: [], last: null },
       room3: { history: [], last: null },
     },
+  },
+  extra: {
+    sportpesa: { history: [], last: null },
+    mozzart: { history: [], last: null },
+    odibets: { history: [], last: null },
   },
 };
 
@@ -365,6 +402,55 @@ function computeRoomPrediction(roomId) {
   };
   roomState.last = result;
   return result;
+}
+
+function updateExtraBook(id) {
+  const cfg = EXTRA_BOOKS[id];
+  const box = state.extra[id];
+  if (!box.history.length) box.history = generateHistory(cfg);
+  const { crash, pattern, momentum, volatility } = predictNextCrash(cfg, box.history);
+  const confidence = getConfidence(cfg, pattern, volatility);
+  const winIndex = parseFloat(computeWinIndex(cfg, confidence, pattern));
+  const cashout = safeCashout(crash, confidence);
+  const risk = riskLabel(confidence, false);
+  const signal = signalText(confidence, false);
+  const result = { id, crash, confidence, winIndex, cashout, risk, signal, pattern, momentum, volatility };
+  box.last = result;
+
+  setText(`${id}Crash`, crash.toFixed(2));
+  setText(`${id}Confidence`, `${confidence.toFixed(0)}%`);
+  setText(`${id}Cashout`, `${cashout.toFixed(2)}×`);
+  setText(`${id}WinIndex`, `${winIndex.toFixed(1)}%`);
+  const riskEl = document.getElementById(`${id}Risk`);
+  if (riskEl) {
+    riskEl.textContent = risk.text;
+    riskEl.className = `stat__value ${risk.cls}`.trim();
+  }
+  const sigEl = document.getElementById(`${id}Signal`);
+  if (sigEl) {
+    sigEl.textContent = signal.text;
+    sigEl.className = `action-signal ${signal.cls}`;
+  }
+  setBar(`${id}Pattern`, pattern);
+  setText(`${id}PatternVal`, `${pattern.toFixed(0)}%`);
+  setBar(`${id}Momentum`, momentum);
+  setText(`${id}MomentumVal`, `${momentum.toFixed(0)}%`);
+  setBar(`${id}Volatility`, volatility);
+  setText(`${id}VolatilityVal`, `${volatility.toFixed(0)}%`);
+  renderHistory(`${id}History`, box.history);
+
+  const playBtn = document.getElementById(`${id}PlayBtn`);
+  if (playBtn) playBtn.href = cfg.url;
+
+  return result;
+}
+
+function updateAllExtraBooks() {
+  const results = EXTRA_IDS.map((id) => updateExtraBook(id));
+  const avgCrash = results.reduce((s, r) => s + r.crash, 0) / results.length;
+  const avgConf = results.reduce((s, r) => s + r.confidence, 0) / results.length;
+  const avgWin = results.reduce((s, r) => s + r.winIndex, 0) / results.length;
+  return { results, avgCrash, avgConf, avgWin };
 }
 
 function buildJantaTip(result) {
@@ -672,11 +758,22 @@ function updateAllBetikaRooms() {
   return { results, best, avgCrash, avgConf, avgWin };
 }
 
-function updateGlobal(janta, betika) {
-  const blendedCrash = (janta.crash * 0.55 + betika.avgCrash * 0.45).toFixed(2);
-  const blendedConf = janta.confidence * 0.6 + betika.avgConf * 0.4;
-  const blendedCash = (janta.cashout * 0.6 + betika.results[0].cashout * 0.2 +
-    betika.results[1].cashout * 0.1 + betika.results[2].cashout * 0.1).toFixed(2);
+function updateGlobal(janta, betika, extra) {
+  const blendedCrash = (
+    janta.crash * 0.4 +
+    betika.avgCrash * 0.35 +
+    extra.avgCrash * 0.25
+  ).toFixed(2);
+  const blendedConf = janta.confidence * 0.45 + betika.avgConf * 0.35 + extra.avgConf * 0.2;
+  const blendedCash = (
+    janta.cashout * 0.4 +
+    betika.results[0].cashout * 0.15 +
+    betika.results[1].cashout * 0.1 +
+    betika.results[2].cashout * 0.1 +
+    extra.results[0].cashout * 0.1 +
+    extra.results[1].cashout * 0.08 +
+    extra.results[2].cashout * 0.07
+  ).toFixed(2);
   const signalStrength =
     blendedConf >= 75 ? "Strong" : blendedConf >= 65 ? "Moderate" : "Fair";
 
@@ -690,15 +787,22 @@ function updateGlobal(janta, betika) {
 
   setText("cmpWinJanta", `${janta.winIndex}%`);
   setText("cmpWinBetika", `${betika.avgWin.toFixed(1)}% avg`);
+  setText("cmpWinSportpesa", `${extra.results[0].winIndex.toFixed(1)}%`);
+  setText("cmpWinMozzart", `${extra.results[1].winIndex.toFixed(1)}%`);
+  setText("cmpWinOdibets", `${extra.results[2].winIndex.toFixed(1)}%`);
   setText("cmpCrashJanta", `${janta.crash.toFixed(2)}×`);
   setText("cmpCrashBetika", `${betika.best.crash.toFixed(2)}× best`);
+  setText("cmpCrashSportpesa", `${extra.results[0].crash.toFixed(2)}×`);
+  setText("cmpCrashMozzart", `${extra.results[1].crash.toFixed(2)}×`);
+  setText("cmpCrashOdibets", `${extra.results[2].crash.toFixed(2)}×`);
 }
 
 function runPrediction(animate = true) {
   document.body.classList.toggle("is-updating", animate);
   const janta = updateJanta();
   const betika = updateAllBetikaRooms();
-  updateGlobal(janta, betika);
+  const extra = updateAllExtraBooks();
+  updateGlobal(janta, betika, extra);
   requestAnimationFrame(() => {
     document.body.classList.remove("is-updating");
   });
@@ -719,6 +823,12 @@ function simulateRounds() {
     state.janta.history.push(jantaNext);
     if (state.janta.history.length > 20) state.janta.history.shift();
   }
+  if (Math.random() > 0.5) {
+    const pick = EXTRA_IDS[Math.floor(Math.random() * EXTRA_IDS.length)];
+    const cfg = EXTRA_BOOKS[pick];
+    state.extra[pick].history.push(generateCrashMultiplier(cfg));
+    if (state.extra[pick].history.length > 20) state.extra[pick].history.shift();
+  }
   runPrediction(true);
 }
 
@@ -727,6 +837,10 @@ function refreshPredictions() {
   ROOM_IDS.forEach((id) => {
     state.betika.rooms[id].history = generateHistory(getRoomConfig(id));
     state.betika.rooms[id].last = null;
+  });
+  EXTRA_IDS.forEach((id) => {
+    state.extra[id].history = generateHistory(EXTRA_BOOKS[id]);
+    state.extra[id].last = null;
   });
   runPrediction(true);
   if (navigator.vibrate) navigator.vibrate(12);
@@ -850,6 +964,9 @@ function init() {
   state.janta.history = generateHistory(PLATFORMS.janta);
   ROOM_IDS.forEach((id) => {
     state.betika.rooms[id].history = generateHistory(getRoomConfig(id));
+  });
+  EXTRA_IDS.forEach((id) => {
+    state.extra[id].history = generateHistory(EXTRA_BOOKS[id]);
   });
 
   initRoomTabs();
