@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: aviator-prediction-api
+    env: node
+    plan: free
+    autoDeploy: true
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    healthCheckPath: /api/session-code
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: PUBLIC_SITE_URL
+        sync: false
+      - key: WHATSAPP_PUSH_WEBHOOK
+        sync: false
+      - key: WHATSAPP_PUSH_AUTH_HEADER
+        sync: false
+      - key: WHATSAPP_PUSH_AUTH_TOKEN
+        sync: false

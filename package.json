@@ -1,0 +1,13 @@
+{
+  "name": "aviator-prediction",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Aviator predictor web app and API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js --no-browser"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
