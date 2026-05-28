@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#22c55e" />
+  <title>Scan QR — Aviator Pro</title>
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --card: #12151c;
+      --text: #e8eaef;
+      --muted: #8b92a5;
+      --accent: #22c55e;
+      --gold: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      padding-top: max(1.5rem, env(safe-area-inset-top));
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2rem 1.5rem;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.45);
+    }
+    h1 {
+      font-size: 1.35rem;
+      margin-bottom: 0.35rem;
+    }
+    .sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .qr-wrap {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1rem;
+      display: inline-block;
+      margin-bottom: 1.25rem;
+    }
+    #qrcode canvas,
+    #qrcode img {
+      display: block !important;
+      margin: 0 auto;
+    }
+    .url {
+      font-family: Consolas, monospace;
+      font-size: 0.95rem;
+      color: var(--accent);
+      word-break: break-all;
+      padding: 0.75rem 1rem;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+    }
+    .steps {
+      text-align: left;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .steps li { margin-left: 1.2rem; margin-bottom: 0.35rem; }
+    .steps strong { color: var(--text); }
+    .badge {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+    }
+    .loading {
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      font-size: 0.9rem;
+    }
+    .err { color: #f87171; font-size: 0.85rem; margin-top: 1rem; }
+    a.open-app {
+      display: inline-block;
+      margin-top: 1rem;
+      color: var(--accent);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Scan to open on phone</h1>
+    <p class="sub">Same Wi‑Fi as this PC. Point your camera at the code below.</p>
+
+    <div class="qr-wrap">
+      <div id="qrcode"><div class="loading">Loading QR…</div></div>
+    </div>
+
+    <p class="url" id="phoneUrl">—</p>
+
+    <ol class="steps">
+      <li>Run <strong>start-phone-server.bat</strong> on your PC</li>
+      <li>Connect phone to the <strong>same Wi‑Fi</strong></li>
+      <li><strong>Scan</strong> the QR with Camera (iPhone) or Camera / Chrome (Android)</li>
+      <li>Tap the link → then <strong>Add to Home Screen</strong> to install the app</li>
+    </ol>
+
+    <span class="badge">Aviator Pro Predictor</span>
+    <p class="err" id="errMsg" hidden></p>
+    <a class="open-app" href="index.html" id="openApp" hidden>Open app on this device →</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script>
+    async function init() {
+      const box = document.getElementById("qrcode");
+      const urlEl = document.getElementById("phoneUrl");
+      const errEl = document.getElementById("errMsg");
+      const openApp = document.getElementById("openApp");
+
+      let data;
+      try {
+        const res = await fetch("lan-url.json?t=" + Date.now());
+        if (!res.ok) throw new Error("Could not read lan-url.json");
+        data = await res.json();
+      } catch (e) {
+        box.innerHTML = "";
+        errEl.hidden = false;
+        errEl.textContent =
+          "Start the server first (double-click start-phone-server.bat), then refresh this page.";
+        return;
+      }
+
+      const url = data.url;
+      urlEl.textContent = url;
+      openApp.href = url.replace(/\/$/, "") + "/index.html";
+      openApp.hidden = false;
+
+      box.innerHTML = "";
+      try {
+        await QRCode.toCanvas(url, {
+          width: 260,
+          margin: 2,
+          color: { dark: "#0a0c10", light: "#ffffff" },
+          errorCorrectionLevel: "M",
+        }).then((canvas) => {
+          box.appendChild(canvas);
+        });
+      } catch (e) {
+        const img = document.createElement("img");
+        img.width = 260;
+        img.height = 260;
+        img.alt = "QR code";
+        img.src =
+          "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=" +
+          encodeURIComponent(url);
+        box.appendChild(img);
+      }
+    }
+    init();
+  </script>
+</body>
+</html>

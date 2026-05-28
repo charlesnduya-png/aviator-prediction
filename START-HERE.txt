@@ -1,0 +1,33 @@
+╔══════════════════════════════════════════════════════════════╗
+║           AVIATOR PRO PREDICTOR — START HERE                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+  QUICK START (PC + PHONE)
+  ────────────────────────
+  1. Double-click:  start-phone-server.bat
+  2. QR page opens on PC — scan with your phone (same Wi-Fi)
+  3. On phone: Add to Home Screen = install like an app
+
+  OPEN ON PC ONLY
+  ───────────────
+  Double-click:  index.html
+  (or after server starts: http://localhost:8080)
+
+  OFFICIAL GAME LINKS (in the app)
+  ────────────────────────────────
+  Janta.ke (★ #1 recommended):
+    https://janta.ke/home/game/aviator
+
+  Betika (Room 1, 2, 3):
+    https://www.betika.com/en-ke/aviator
+
+  SHARE WITH FRIENDS
+  ──────────────────
+  Send them:  AVIATOR-PRO-FINAL.zip
+  They unzip → run start-phone-server.bat
+
+  NEED HELP?
+  ──────────
+  Read README.md for full guide.
+
+  18+ · Gamble responsibly · Predictions are simulated analytics.

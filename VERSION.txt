@@ -1,0 +1,9 @@
+Aviator Pro Predictor
+Version: 1.0.0 FINAL
+Date: May 2026
+
+Platforms: Janta.ke + Betika (Room 1, 2, 3)
+Phone: PWA + QR scan
+Links:
+  Janta: https://janta.ke/home/game/aviator
+  Betika: https://www.betika.com/en-ke/aviator

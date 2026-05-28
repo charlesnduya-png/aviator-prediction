@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#22c55e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Aviator Pro" />
+  <meta name="description" content="Aviator crash predictor for Betika and Janta.ke — next plane crash signals" />
+  <title>Aviator Pro Predictor | Betika & Janta.ke</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="app-shell">
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow--left"></div>
+  <div class="bg-glow bg-glow--right"></div>
+
+  <div class="install-banner" id="installBanner" hidden>
+    <div class="install-banner__text">
+      <strong>Install App</strong>
+      <span>Add to home screen for full-screen phone use</span>
+    </div>
+    <button type="button" class="install-banner__btn" id="installBtn">Install</button>
+    <button type="button" class="install-banner__close" id="installDismiss" aria-label="Dismiss">×</button>
+  </div>
+
+  <header class="header" id="top">
+    <div class="header__brand">
+      <div class="logo">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M4 20 L16 8 L28 20 L22 20 L22 26 L10 26 L10 20 Z" fill="currentColor" opacity="0.9"/>
+          <circle cx="16" cy="14" r="3" fill="var(--accent)"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Aviator Pro Predictor</h1>
+        <p class="header__tagline">Advanced crash analytics & next-round intelligence</p>
+      </div>
+    </div>
+    <div class="header__status">
+      <span class="pulse-dot"></span>
+      <span id="liveStatus">Live · 3s refresh</span>
+      <span class="header__time" id="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <section class="hero-prediction" id="predict">
+    <div class="hero-prediction__inner">
+      <div class="hero-prediction__label">Next Plane Crash — Global Signal</div>
+      <div class="hero-prediction__value" id="globalCrash">—</div>
+      <div class="hero-prediction__meta">
+        <span>Confidence <strong id="globalConfidence">—</strong></span>
+        <span>Optimal cash-out <strong id="globalCashout">—</strong></span>
+        <span>Signal strength <strong id="globalSignal">—</strong></span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-bar__fill" id="globalBar"></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="platforms" id="platforms">
+    <!-- JANTA.KE — Primary / High Win → janta.ke Aviator -->
+    <article class="platform platform--featured" data-platform="janta" id="janta">
+      <div class="platform__ribbon">#1 Highest Win Rate</div>
+      <header class="platform__header">
+        <div class="platform__identity">
+          <span class="platform__badge platform__badge--premium">★ Top Pick · Linked</span>
+          <h2>Janta.ke</h2>
+          <p class="platform__subtitle">
+            <a class="platform__official-link platform__official-link--janta" href="https://janta.ke/home/game/aviator" target="_blank" rel="noopener noreferrer">janta.ke/home/game/aviator</a>
+          </p>
+        </div>
+        <div class="platform__win-rate">
+          <span class="platform__win-label">Win Index</span>
+          <span class="platform__win-value" id="jantaWinIndex">—</span>
+        </div>
+      </header>
+
+      <div class="janta-connect janta-connect--hype" id="jantaConnect">
+        <div class="janta-connect__badges">
+          <span class="janta-badge janta-badge--fire">🔥 HOT</span>
+          <span class="janta-badge">#1 PICK</span>
+          <span class="janta-badge janta-badge--gold">BEST ODDS</span>
+        </div>
+        <p class="janta-connect__eyebrow">Official link · Premium tier</p>
+        <h3 class="janta-connect__title">Janta.ke Aviator — Highest Win Probability</h3>
+        <p class="janta-connect__hype" id="jantaHypeText">
+          Engine rated <strong>Janta.ke #1</strong> over Betika — stronger buy signals, lower risk, bigger cash-out window.
+        </p>
+        <div class="janta-connect__status" id="jantaLinkStatus">
+          <span class="janta-connect__dot"></span>
+          Linked to <a href="https://janta.ke/home/game/aviator" target="_blank" rel="noopener noreferrer">Janta Aviator</a>
+        </div>
+        <div class="janta-connect__actions">
+          <a
+            class="btn-janta-play"
+            id="jantaPlayBtn"
+            href="https://janta.ke/home/game/aviator"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="btn-janta-play__icon">🚀</span>
+            PLAY JANTA AVIATOR NOW
+          </a>
+          <button type="button" class="btn-janta-copy" id="jantaCopyBtn">Copy hot tip</button>
+        </div>
+        <div class="janta-connect__tips">
+          <div class="janta-tip">
+            <span>Cash out near</span>
+            <strong id="jantaPlayCashout">—</strong>
+          </div>
+          <div class="janta-tip janta-tip--highlight">
+            <span>Target crash</span>
+            <strong id="jantaPlayCrash">—</strong>
+          </div>
+          <div class="janta-tip">
+            <span>Win boost</span>
+            <strong class="janta-tip__boost">+18%</strong>
+          </div>
+        </div>
+        <p class="janta-connect__footer">Most users win here first — open Janta, apply the tip, cash out early.</p>
+      </div>
+
+      <div class="platform__crash-card">
+        <div class="crash-display">
+          <span class="crash-display__label">Next Crash Prediction</span>
+          <span class="crash-display__multiplier" id="jantaCrash">—</span>
+          <span class="crash-display__unit">×</span>
+        </div>
+        <div class="crash-stats">
+          <div class="stat">
+            <span class="stat__label">Confidence</span>
+            <span class="stat__value stat__value--high" id="jantaConfidence">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat__label">Safe Cash-Out</span>
+            <span class="stat__value" id="jantaCashout">—</span>
+          </div>
+          <div class="stat">
+            <span class="stat__label">Risk Level</span>
+            <span class="stat__value stat__value--low" id="jantaRisk">Low</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="platform__indicators">
+        <div class="indicator">
+          <span>Pattern Match</span>
+          <div class="indicator__bar"><div class="indicator__fill" id="jantaPattern"></div></div>
+          <span id="jantaPatternVal">—</span>
+        </div>
+        <div class="indicator">
+          <span>Momentum</span>
+          <div class="indicator__bar"><div class="indicator__fill" id="jantaMomentum"></div></div>
+          <span id="jantaMomentumVal">—</span>
+        </div>
+        <div class="indicator">
+          <span>Volatility Index</span>
+          <div class="indicator__bar"><div class="indicator__fill indicator__fill--muted" id="jantaVolatility"></div></div>
+          <span id="jantaVolatilityVal">—</span>
+        </div>
+      </div>
+
+      <div class="platform__history">
+        <h3>Recent Rounds (Simulated)</h3>
+        <ul class="history-list" id="jantaHistory"></ul>
+      </div>
+
+      <div class="platform__action">
+        <span class="action-signal action-signal--strong" id="jantaSignal">STRONG BUY SIGNAL</span>
+        <a
+          class="btn-janta-room"
+          id="jantaRoomPlayBtn"
+          href="https://janta.ke/home/game/aviator"
+          target="_blank"
+          rel="noopener noreferrer"
+        >Win on Janta.ke →</a>
+      </div>
+    </article>
+
+    <!-- BETIKA — 3 Servers / Rooms → betika.com Aviator -->
+    <article class="platform platform--secondary platform--betika" data-platform="betika" id="betika">
+      <header class="platform__header">
+        <div class="platform__identity">
+          <span class="platform__badge">Linked · betika.com</span>
+          <h2>Betika</h2>
+          <p class="platform__subtitle">
+            <a class="platform__official-link" href="https://www.betika.com/en-ke/aviator" target="_blank" rel="noopener noreferrer">betika.com/en-ke/aviator</a>
+          </p>
+        </div>
+        <div class="platform__win-rate">
+          <span class="platform__win-label">Best Room</span>
+          <span class="platform__win-value" id="betikaBestWin">—</span>
+        </div>
+      </header>
+
+      <div class="betika-connect" id="betikaConnect">
+        <div class="betika-connect__head">
+          <span class="betika-connect__status" id="betikaLinkStatus">
+            <span class="betika-connect__dot"></span>
+            Linked to Betika Aviator
+          </span>
+        </div>
+        <p class="betika-connect__room-hint" id="betikaRoomHint">Room 1 — pick the same server inside Betika after you open the game.</p>
+        <div class="betika-connect__actions">
+          <a
+            class="btn-betika-play"
+            id="betikaPlayBtn"
+            href="https://www.betika.com/en-ke/aviator"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+            Open Betika Aviator
+          </a>
+          <button type="button" class="btn-betika-copy" id="betikaCopyBtn" title="Copy prediction">Copy tip</button>
+        </div>
+        <p class="betika-connect__prediction">
+          Active tip: cash out near <strong id="betikaPlayCashout">—</strong>
+          · target crash <strong id="betikaPlayCrash">—</strong>
+        </p>
+      </div>
+
+      <div class="room-tabs" role="tablist" aria-label="Betika servers">
+        <button type="button" class="room-tab room-tab--active" role="tab" aria-selected="true" data-room="room1" id="tab-room1">
+          <span class="room-tab__name">Room 1</span>
+          <span class="room-tab__server">Server A</span>
+          <span class="room-tab__live"><span class="room-tab__dot"></span>Live</span>
+        </button>
+        <button type="button" class="room-tab" role="tab" aria-selected="false" data-room="room2" id="tab-room2">
+          <span class="room-tab__name">Room 2</span>
+          <span class="room-tab__server">Server B</span>
+          <span class="room-tab__live"><span class="room-tab__dot"></span>Live</span>
+        </button>
+        <button type="button" class="room-tab" role="tab" aria-selected="false" data-room="room3" id="tab-room3">
+          <span class="room-tab__name">Room 3</span>
+          <span class="room-tab__server">Server C</span>
+          <span class="room-tab__live"><span class="room-tab__dot"></span>Live</span>
+        </button>
+      </div>
+
+      <div class="rooms-overview" id="roomsOverview" aria-label="All Betika rooms at a glance"></div>
+
+      <div class="room-detail" id="betikaDetail">
+        <div class="room-detail__server" id="betikaActiveServer">Server A · Room 1</div>
+        <div class="platform__crash-card">
+          <div class="crash-display crash-display--secondary">
+            <span class="crash-display__label">Next Crash — Active Room</span>
+            <span class="crash-display__multiplier" id="betikaCrash">—</span>
+            <span class="crash-display__unit">×</span>
+          </div>
+          <div class="crash-stats">
+            <div class="stat">
+              <span class="stat__label">Confidence</span>
+              <span class="stat__value" id="betikaConfidence">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Safe Cash-Out</span>
+              <span class="stat__value" id="betikaCashout">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat__label">Risk</span>
+              <span class="stat__value stat__value--medium" id="betikaRisk">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="platform__indicators">
+          <div class="indicator">
+            <span>Pattern</span>
+            <div class="indicator__bar"><div class="indicator__fill" id="betikaPattern"></div></div>
+            <span id="betikaPatternVal">—</span>
+          </div>
+          <div class="indicator">
+            <span>Momentum</span>
+            <div class="indicator__bar"><div class="indicator__fill" id="betikaMomentum"></div></div>
+            <span id="betikaMomentumVal">—</span>
+          </div>
+          <div class="indicator">
+            <span>Volatility</span>
+            <div class="indicator__bar"><div class="indicator__fill indicator__fill--muted" id="betikaVolatility"></div></div>
+            <span id="betikaVolatilityVal">—</span>
+          </div>
+        </div>
+
+        <div class="platform__history">
+          <h3>Recent Rounds — <span id="betikaHistoryLabel">Room 1</span></h3>
+          <ul class="history-list" id="betikaHistory"></ul>
+        </div>
+
+        <div class="platform__action">
+          <span class="action-signal action-signal--moderate" id="betikaSignal">—</span>
+          <a
+            class="btn-betika-room"
+            id="betikaRoomPlayBtn"
+            href="https://www.betika.com/en-ke/aviator"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Play on Betika →</a>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <section class="comparison" id="compare">
+    <h2>Platform Comparison</h2>
+    <div class="comparison__grid">
+      <div class="comparison__row comparison__row--header">
+        <span>Metric</span>
+        <span>Janta.ke</span>
+        <span>Betika</span>
+      </div>
+      <div class="comparison__row">
+        <span>Win Probability</span>
+        <span class="comparison__winner" id="cmpWinJanta">—</span>
+        <span id="cmpWinBetika">—</span>
+      </div>
+      <div class="comparison__row">
+        <span>Next Crash (×)</span>
+        <span class="comparison__winner" id="cmpCrashJanta">—</span>
+        <span id="cmpCrashBetika">—</span>
+      </div>
+      <div class="comparison__row comparison__row--rooms">
+        <span>Betika Room 1</span>
+        <span class="comparison__muted comparison__span-2" id="cmpRoom1">—</span>
+      </div>
+      <div class="comparison__row comparison__row--rooms">
+        <span>Betika Room 2</span>
+        <span class="comparison__muted comparison__span-2" id="cmpRoom2">—</span>
+      </div>
+      <div class="comparison__row comparison__row--rooms">
+        <span>Betika Room 3</span>
+        <span class="comparison__muted comparison__span-2" id="cmpRoom3">—</span>
+      </div>
+      <div class="comparison__row">
+        <span>Best Betika Room</span>
+        <span class="comparison__span-2 comparison__betika-best" id="cmpBestRoom">—</span>
+      </div>
+      <div class="comparison__row comparison__row--highlight">
+        <span>Recommended Platform</span>
+        <span class="comparison__winner comparison__span-2">Janta.ke — #1 Higher Edge · <a href="https://janta.ke/home/game/aviator" target="_blank" rel="noopener noreferrer">Play now</a></span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer" id="footer">
+    <p>Aviator Pro Predictor uses pattern analysis, volatility modeling, and historical simulation. Gambling involves risk. Play responsibly. 18+</p>
+    <button type="button" class="btn-refresh" id="refreshBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Refresh Predictions
+    </button>
+    <p class="footer__ios-hint" id="iosHint" hidden>
+      <strong>iPhone:</strong> Tap Share → <em>Add to Home Screen</em>
+    </p>
+  </footer>
+
+  <nav class="bottom-nav" aria-label="App navigation">
+    <button type="button" class="bottom-nav__item bottom-nav__item--active" data-target="predict" aria-label="Predictions">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span>Predict</span>
+    </button>
+    <button type="button" class="bottom-nav__item" data-target="janta" aria-label="Janta.ke">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Janta</span>
+    </button>
+    <button type="button" class="bottom-nav__item bottom-nav__item--refresh" id="navRefresh" aria-label="Refresh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      <span>Refresh</span>
+    </button>
+    <button type="button" class="bottom-nav__item" data-target="betika" aria-label="Betika">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <span>Betika</span>
+    </button>
+    <button type="button" class="bottom-nav__item" data-target="compare" aria-label="Compare">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      <span>Compare</span>
+    </button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+Aviator Pro Predictor — LIVE ON NETLIFY
+========================================
+
+Your public link:
+  https://jocular-pithivier-dc1b63.netlify.app
+
+Passcode:
+  Generated in-app per live session
+
+Main app:
+  https://jocular-pithivier-dc1b63.netlify.app/index.html
+
+QR page:
+  https://jocular-pithivier-dc1b63.netlify.app/scan.html
+
+Claim site (required before custom domain):
+  https://app.netlify.com/drop/jocular-pithivier-dc1b63
+  Or log in: https://app.netlify.com
+
+Custom domain guide:
+  See CONNECT-DOMAIN.md in this folder
+
+Deployed: May 2026
