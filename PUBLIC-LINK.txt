@@ -1,16 +1,25 @@
 Aviator Pro Predictor — PUBLIC LINKS
 ====================================
 
-Main site (install app from here):
+Hosting: GitHub Pages (repo charlesnduya-png/aviator-prediction)
+Deploy: push to main → GitHub Actions runs automatically
+
+Main site (after DNS update):
   https://pilot.ke
+
+GitHub Pages URL:
+  https://charlesnduya-png.github.io/aviator-prediction/
 
 QR / install page:
   https://pilot.ke/scan.html
 
-API (Render):
-  https://aviator-prediction-q4qg.onrender.com/api/session-code
+DNS (Truehost) — point pilot.ke to GitHub Pages:
+  A  @  185.199.108.153
+  A  @  185.199.109.153
+  A  @  185.199.110.153
+  A  @  185.199.111.153
+  CNAME  www  charlesnduya-png.github.io
 
-Passcode:
-  Generated in-app per live session
+Remove old Vercel records (@ → 76.76.21.21, www → cname.vercel-dns.com).
 
-Deployed: May 2026
+Deployed: July 2026
