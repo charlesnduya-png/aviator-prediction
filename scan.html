@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XQKED5TV3L"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XQKED5TV3L");
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#22c55e" />
   <title>Scan QR — Aviator Pro</title>
@@ -111,8 +119,8 @@
 </head>
 <body>
   <div class="card">
-    <h1>Scan to open on phone</h1>
-    <p class="sub">Same Wi‑Fi as this PC. Point your camera at the code below.</p>
+    <h1>Scan to install the app</h1>
+    <p class="sub">Point your camera at the code — opens <strong>pilot.ke</strong> (works on any network).</p>
 
     <div class="qr-wrap">
       <div id="qrcode"><div class="loading">Loading QR…</div></div>
@@ -121,10 +129,9 @@
     <p class="url" id="phoneUrl">—</p>
 
     <ol class="steps">
-      <li>Run <strong>start-phone-server.bat</strong> on your PC</li>
-      <li>Connect phone to the <strong>same Wi‑Fi</strong></li>
-      <li><strong>Scan</strong> the QR with Camera (iPhone) or Camera / Chrome (Android)</li>
-      <li>Tap the link → then <strong>Add to Home Screen</strong> to install the app</li>
+      <li><strong>Scan</strong> the QR with Camera (iPhone) or Chrome (Android)</li>
+      <li>Open <strong>pilot.ke</strong> in the browser</li>
+      <li><strong>Add to Home Screen</strong> to install the app (iPhone: Share → Add to Home Screen)</li>
     </ol>
 
     <span class="badge">Aviator Pro Predictor</span>
@@ -134,26 +141,30 @@
 
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
+    const PUBLIC_APP_URL = "https://pilot.ke";
+
+    function resolveInstallUrl(data) {
+      const host = window.location.hostname;
+      if (/^(localhost|127\.0\.0\.1)$/i.test(host)) {
+        if (data?.publicUrl) return data.publicUrl.replace(/\/$/, "");
+        if (data?.url && /^https:\/\//i.test(data.url)) return data.url.replace(/\/$/, "");
+      }
+      return PUBLIC_APP_URL;
+    }
+
     async function init() {
       const box = document.getElementById("qrcode");
       const urlEl = document.getElementById("phoneUrl");
       const errEl = document.getElementById("errMsg");
       const openApp = document.getElementById("openApp");
 
-      let data;
+      let data = null;
       try {
         const res = await fetch("lan-url.json?t=" + Date.now());
-        if (!res.ok) throw new Error("Could not read lan-url.json");
-        data = await res.json();
-      } catch (e) {
-        box.innerHTML = "";
-        errEl.hidden = false;
-        errEl.textContent =
-          "Start the server first (double-click start-phone-server.bat), then refresh this page.";
-        return;
-      }
+        if (res.ok) data = await res.json();
+      } catch (_) {}
 
-      const url = data.url;
+      const url = resolveInstallUrl(data);
       urlEl.textContent = url;
       openApp.href = url.replace(/\/$/, "") + "/index.html";
       openApp.hidden = false;

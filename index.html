@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XQKED5TV3L"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-XQKED5TV3L");
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
   <meta name="theme-color" content="#22c55e" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -19,23 +27,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="app-shell">
-  <div class="access-gate" id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle">
-    <div class="access-gate__card">
-      <h2 id="accessGateTitle">Website Closed</h2>
-      <div class="access-gate__brand" aria-label="janta.ke animated banner">
-        <span class="access-gate__brand-dot"></span>
-        <span class="access-gate__brand-text">janta.ke</span>
-      </div>
-      <p class="access-gate__text" id="accessGateText">Enter current code to open the website.</p>
-      <p class="access-gate__hint" id="accessCodeHint">Code: --</p>
-      <form id="accessGateForm" class="access-gate__form" autocomplete="off">
-        <input id="accessCodeInput" class="access-gate__input" type="text" placeholder="Enter access code" />
-        <button class="access-gate__btn" type="submit">Open</button>
-      </form>
-      <p class="access-gate__error" id="accessCodeError" aria-live="polite"></p>
-    </div>
-  </div>
-
   <div class="bg-grid"></div>
   <div class="bg-glow bg-glow--left"></div>
   <div class="bg-glow bg-glow--right"></div>
@@ -50,46 +41,75 @@
   </div>
 
   <header class="header" id="top">
-    <div class="header__brand">
-      <div class="logo">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <path d="M4 20 L16 8 L28 20 L22 20 L22 26 L10 26 L10 20 Z" fill="currentColor" opacity="0.9"/>
-          <circle cx="16" cy="14" r="3" fill="var(--accent)"/>
-        </svg>
+    <div class="header__subbar">
+      <div class="header__status">
+        <span class="pulse-dot"></span>
+        <span id="liveStatus">Online</span>
+        <span class="header__time" id="clock">--:--:--</span>
       </div>
-      <div>
-        <h1>Aviator Pro Predictor</h1>
-        <p class="header__tagline">Advanced crash analytics & next-round intelligence</p>
-      </div>
-    </div>
-    <div class="header__status">
-      <span class="pulse-dot"></span>
-      <span id="liveStatus">Checking schedule...</span>
-      <span class="header__next" id="nextOpenTimer">Opens in --:--:--</span>
-      <span class="header__code" id="sessionCode">Code —</span>
-      <span class="header__time" id="clock">--:--:--</span>
     </div>
   </header>
 
-  <section class="hero-prediction" id="predict">
-    <div class="hero-prediction__inner">
-      <div class="hero-prediction__label">Next Plane Crash — Global Signal</div>
-      <div class="hero-prediction__value" id="globalCrash">—</div>
-      <div class="hero-prediction__meta">
-        <span>Confidence <strong id="globalConfidence">—</strong></span>
-        <span>Optimal cash-out <strong id="globalCashout">—</strong></span>
-        <span>Signal strength <strong id="globalSignal">—</strong></span>
+  <section class="janta-advert" id="predict">
+    <div class="janta-advert__inner">
+      <div class="janta-advert__glow" aria-hidden="true"></div>
+      <div class="janta-advert__body">
+        <div class="janta-advert__badges">
+          <span class="janta-badge janta-badge--fire">🔥 HOT</span>
+          <span class="janta-badge">#1 PICK</span>
+          <span class="janta-badge janta-badge--gold">BEST ODDS</span>
+        </div>
+        <p class="janta-advert__eyebrow">Official partner · Aviator crash game</p>
+        <h2 class="janta-advert__title">
+          Play Aviator on <span class="janta-advert__brand">janta.ke</span>
+        </h2>
+        <p class="janta-advert__desc">
+          Kenya's top-rated Aviator — fast M-Pesa, live crash rounds, highest win signals on Pilot.
+        </p>
+        <ul class="janta-advert__perks">
+          <li><span aria-hidden="true">⚡</span> Instant deposits</li>
+          <li><span aria-hidden="true">✈</span> Live Aviator</li>
+          <li><span aria-hidden="true">🏆</span> #1 rated</li>
+        </ul>
       </div>
-      <div class="confidence-bar">
-        <div class="confidence-bar__fill" id="globalBar"></div>
+      <div class="janta-advert__center">
+        <a class="janta-advert__predict" href="#janta" id="jantaAdvertPredictLink" aria-label="Janta.ke next crash prediction — view full card">
+          <span class="janta-advert__predict-label">Next Crash · Janta.ke</span>
+          <span class="janta-advert__predict-value">
+            <span id="jantaAdvertCrash">—</span><span class="janta-advert__predict-unit">×</span>
+          </span>
+          <span class="janta-advert__predict-meta">
+            Cash-out <strong id="jantaAdvertCashout">—</strong>
+            · <span id="jantaAdvertConfidence">—</span>
+          </span>
+        </a>
+        <div class="janta-advert__cta">
+          <a
+            class="janta-join-btn"
+            id="jantaAdvertJoinBtn"
+            href="https://janta.ke/home/games/all"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="janta-join-btn__ring" aria-hidden="true"></span>
+            <span class="janta-join-btn__shine" aria-hidden="true"></span>
+            <span class="janta-join-btn__plane" aria-hidden="true">✈</span>
+            <span class="janta-join-btn__copy">
+              <span class="janta-join-btn__eyebrow">Kenya's #1 Aviator</span>
+              <span class="janta-join-btn__label">Join <strong>janta.ke</strong></span>
+            </span>
+            <span class="janta-join-btn__arrow" aria-hidden="true">→</span>
+          </a>
+          <p class="janta-advert__url">janta.ke/home/games/all</p>
+        </div>
       </div>
+      <p class="janta-advert__signal" id="jantaAdvertSignal">Syncing Janta.ke signal…</p>
     </div>
   </section>
 
   <main class="platforms" id="platforms">
     <!-- JANTA.KE — Primary / High Win → janta.ke Aviator -->
     <article class="platform platform--featured" data-platform="janta" id="janta">
-      <div class="platform__ribbon">#1 Highest Win Rate</div>
       <header class="platform__header">
         <div class="platform__identity">
           <span class="platform__badge platform__badge--premium">★ Top Pick · Linked</span>
@@ -121,14 +141,21 @@
         </div>
         <div class="janta-connect__actions">
           <a
-            class="btn-janta-play"
+            class="janta-best-advert"
             id="jantaPlayBtn"
-            href="https://janta.ke/home/game/aviator"
+            href="https://janta.ke/home/games/all"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Join janta.ke games"
           >
-            <span class="btn-janta-play__icon">🚀</span>
-            PLAY JANTA AVIATOR NOW
+            <span class="janta-best-advert__shine" aria-hidden="true"></span>
+            <span class="janta-best-advert__crown" aria-hidden="true">👑</span>
+            <div class="janta-best-advert__body">
+              <span class="janta-best-advert__tag">#1 Best Site</span>
+              <strong class="janta-best-advert__title">janta.ke — Kenya's Top Aviator</strong>
+              <span class="janta-best-advert__sub">Fast M-Pesa · Highest wins · Recommended platform</span>
+            </div>
+            <span class="janta-best-advert__plane" aria-hidden="true">✈</span>
           </a>
           <button type="button" class="btn-janta-copy" id="jantaCopyBtn">Copy hot tip</button>
         </div>
@@ -334,6 +361,9 @@
         <div class="platform__identity">
           <span class="platform__badge">Linked · sportpesa.co.ke</span>
           <h2>SportPesa</h2>
+          <p class="platform__subtitle">
+            <a class="platform__official-link" href="https://www.sportpesa.co.ke" target="_blank" rel="noopener noreferrer">sportpesa.co.ke</a>
+          </p>
         </div>
         <div class="platform__win-rate"><span class="platform__win-label">Win Index</span><span class="platform__win-value" id="sportpesaWinIndex">—</span></div>
       </header>
@@ -359,6 +389,9 @@
         <div class="platform__identity">
           <span class="platform__badge">Linked · mozzartbet.co.ke</span>
           <h2>Mozzart</h2>
+          <p class="platform__subtitle">
+            <a class="platform__official-link" href="https://www.mozzartbet.co.ke" target="_blank" rel="noopener noreferrer">mozzartbet.co.ke</a>
+          </p>
         </div>
         <div class="platform__win-rate"><span class="platform__win-label">Win Index</span><span class="platform__win-value" id="mozzartWinIndex">—</span></div>
       </header>
@@ -384,6 +417,9 @@
         <div class="platform__identity">
           <span class="platform__badge">Linked · odibets.com</span>
           <h2>Odibets</h2>
+          <p class="platform__subtitle">
+            <a class="platform__official-link" href="https://odibets.com" target="_blank" rel="noopener noreferrer">odibets.com</a>
+          </p>
         </div>
         <div class="platform__win-rate"><span class="platform__win-label">Win Index</span><span class="platform__win-value" id="odibetsWinIndex">—</span></div>
       </header>

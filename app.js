@@ -1,22 +1,20 @@
 /**
- * Aviator Pro Predictor — Janta.ke + Betika (Room 1, 2, 3)
+ * Aviator Pro Predictor - Janta.ke + Betika (Room 1, 2, 3)
  * Betika linked to official Aviator: https://www.betika.com/en-ke/aviator
  */
 
 /** Official Betika Aviator (Kenya) */
 const BETIKA_AVIATOR_URL = "https://www.betika.com/en-ke/aviator";
 
-/** Official Janta.ke Aviator — top-rated platform in this app */
+/** Official Janta.ke Aviator - top-rated platform in this app */
 const JANTA_AVIATOR_URL = "https://janta.ke/home/game/aviator";
+const JANTA_GAMES_URL = "https://janta.ke/home/games/all";
 const SPORTPESA_AVIATOR_URL = "https://www.sportpesa.co.ke";
 const MOZZART_AVIATOR_URL = "https://www.mozzartbet.co.ke";
 const ODIBETS_AVIATOR_URL = "https://odibets.com";
 
 const TICK_MS = 3000;
 const ROUND_MS = 5000;
-const LIVE_SESSION_HOURS = [9, 14, 16];
-const LIVE_SESSION_DURATION_MIN = 60;
-const PRELIVE_CODE_WINDOW_MIN = 20;
 const HIGH_SIGNAL_CHANCE = 0.24;
 
 const PLATFORMS = {
@@ -111,10 +109,7 @@ let tickTimer = null;
 let roundTimer = null;
 let lastJantaResult = null;
 let clockTimer = null;
-let scheduleTimer = null;
 let loopsRunning = false;
-let activeAccessCode = "";
-let isUnlocked = false;
 
 function rand(min, max) {
   return min + Math.random() * (max - min);
@@ -199,7 +194,7 @@ function safeCashout(crash, confidence) {
 
 function riskLabel(confidence, isJanta) {
   if (isJanta && confidence >= 70) return { text: "Low", cls: "stat__value--low" };
-  if (confidence >= 65) return { text: "Low–Med", cls: "stat__value--medium" };
+  if (confidence >= 65) return { text: "Low-Med", cls: "stat__value--medium" };
   if (confidence >= 55) return { text: "Medium", cls: "stat__value--medium" };
   return { text: "Elevated", cls: "" };
 }
@@ -208,11 +203,11 @@ function signalText(confidence, isJanta) {
   if (isJanta) {
     if (confidence >= 78) return { text: "STRONG BUY SIGNAL", cls: "action-signal--strong" };
     if (confidence >= 68) return { text: "BUY SIGNAL", cls: "action-signal--strong" };
-    return { text: "HOLD — FAVORABLE", cls: "action-signal--strong" };
+    return { text: "HOLD - FAVORABLE", cls: "action-signal--strong" };
   }
-  if (confidence >= 70) return { text: "ROOM SIGNAL — GOOD", cls: "action-signal--moderate" };
+  if (confidence >= 70) return { text: "ROOM SIGNAL - GOOD", cls: "action-signal--moderate" };
   if (confidence >= 60) return { text: "MODERATE SIGNAL", cls: "action-signal--moderate" };
-  return { text: "CAUTIOUS — WAIT", cls: "action-signal--moderate" };
+  return { text: "CAUTIOUS - WAIT", cls: "action-signal--moderate" };
 }
 
 function historyClass(value) {
@@ -231,61 +226,177 @@ function setBar(id, pct) {
   if (el) el.style.width = `${clamp(pct, 0, 100)}%`;
 }
 
-function formatTime(date) {
-  const h = String(date.getHours()).padStart(2, "0");
-  const m = String(date.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
+/** Aviator-style rising multiplier (Janta advert + card) */
+const jantaFlight = {
+  phase: "idle",
+  target: 1,
+  nextTarget: null,
+  pendingRound: null,
+  round: null,
+  startTime: 0,
+  duration: 8000,
+  rafId: null,
+  crashTimer: null,
+  pausedAt: 0,
+};
+
+function flightDurationMs(target) {
+  return clamp(
+    5500 + Math.log(Math.max(target, 1.05)) * 4800 + rand(1200, 2800),
+    6500,
+    32000
+  );
 }
 
-function formatCountdown(ms) {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = String(Math.floor(total / 3600)).padStart(2, "0");
-  const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
-  const s = String(total % 60).padStart(2, "0");
-  return `${h}:${m}:${s}`;
+function aviatorCurve(elapsedMs, target, durationMs) {
+  const t = clamp(elapsedMs / durationMs, 0, 1);
+  const eased = 1 - (1 - t) ** 2.6;
+  return 1 + (target - 1) * eased;
 }
 
-function dateKey(date = new Date()) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate()
-  ).padStart(2, "0")}`;
+function formatFlightMultiplier(value) {
+  return Math.max(1, value).toFixed(2);
 }
 
-function buildSessionCode(dayKey, slotHour) {
-  const seed = `${dayKey}:${slotHour}:aviator-pro`;
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+function formatMultSymbol(value) {
+  return `${formatFlightMultiplier(value)}\u00d7`;
+}
+
+function getJantaFlightValue(now = performance.now()) {
+  if (jantaFlight.phase !== "rising") {
+    return jantaFlight.phase === "crashed" ? jantaFlight.target : 1;
   }
-  return `AV-${(hash % 0xffffff).toString(36).toUpperCase().padStart(5, "0")}`;
+  const elapsed = now - jantaFlight.startTime;
+  return aviatorCurve(elapsed, jantaFlight.target, jantaFlight.duration);
 }
 
-function getSessionWindows(now = new Date()) {
-  return LIVE_SESSION_HOURS.map((hour) => {
-    const start = new Date(now);
-    start.setHours(hour, 0, 0, 0);
-    const end = new Date(start.getTime() + LIVE_SESSION_DURATION_MIN * 60 * 1000);
-    const preliveStart = new Date(start.getTime() - PRELIVE_CODE_WINDOW_MIN * 60 * 1000);
-    return {
-      hour,
-      start,
-      end,
-      preliveStart,
-      code: buildSessionCode(dateKey(start), hour),
-    };
+function syncJantaLiveDisplay(value) {
+  const round = jantaFlight.round || lastJantaResult;
+  if (!round) return;
+
+  const mult = formatFlightMultiplier(value);
+  const liveCash = Math.min(round.cashout, Math.max(1.01, value * 0.9));
+  const cashStr = formatMultSymbol(liveCash);
+  const conf = `${round.confidence.toFixed(0)}%`;
+  const signalText = round.signal?.text || "LIVE SIGNAL";
+
+  setText("jantaCrash", mult);
+  setText("jantaAdvertCrash", mult);
+  setText("jantaCashout", cashStr);
+  setText("jantaAdvertCashout", cashStr);
+  setText("jantaPlayCashout", cashStr);
+  setText("jantaPlayCrash", formatMultSymbol(value));
+  setText("jantaConfidence", conf);
+  setText("jantaAdvertConfidence", `${conf} conf.`);
+  setText("jantaAdvertSignal", `${signalText} \u00b7 cash-out ${cashStr}`);
+
+  const sigEl = document.getElementById("jantaSignal");
+  if (sigEl && round.signal) {
+    sigEl.textContent = round.signal.text;
+    sigEl.className = `action-signal ${round.signal.cls}`;
+  }
+}
+
+function setJantaFlightPhase(phase) {
+  const shells = [
+    document.getElementById("jantaAdvertPredictLink"),
+    document.querySelector('.platform[data-platform="janta"] .crash-display'),
+  ];
+  shells.forEach((el) => {
+    if (!el) return;
+    el.classList.remove("aviator-flight--rising", "aviator-flight--crashed");
+    if (phase === "rising") el.classList.add("aviator-flight--rising");
+    if (phase === "crashed") el.classList.add("aviator-flight--crashed");
   });
 }
 
-function getSessionState(now = new Date()) {
-  const windows = getSessionWindows(now);
-  const active = windows.find((slot) => now >= slot.start && now < slot.end);
-  if (active) return { phase: "live", slot: active };
+function scheduleJantaFlightFrame() {
+  cancelAnimationFrame(jantaFlight.rafId);
+  jantaFlight.rafId = requestAnimationFrame(tickJantaFlightFrame);
+}
 
-  const prelive = windows.find((slot) => now >= slot.preliveStart && now < slot.start);
-  if (prelive) return { phase: "prelive", slot: prelive };
+function tickJantaFlightFrame(now) {
+  if (jantaFlight.phase !== "rising") return;
 
-  const next = windows.find((slot) => now < slot.preliveStart) || windows[0];
-  return { phase: "offline", slot: next };
+  const elapsed = now - jantaFlight.startTime;
+  const value = aviatorCurve(elapsed, jantaFlight.target, jantaFlight.duration);
+  syncJantaLiveDisplay(value);
+
+  if (elapsed >= jantaFlight.duration) {
+    onJantaFlightComplete();
+    return;
+  }
+
+  jantaFlight.rafId = requestAnimationFrame(tickJantaFlightFrame);
+}
+
+function onJantaFlightComplete() {
+  syncJantaLiveDisplay(jantaFlight.target);
+  jantaFlight.phase = "crashed";
+  setJantaFlightPhase("crashed");
+
+  clearTimeout(jantaFlight.crashTimer);
+  jantaFlight.crashTimer = setTimeout(() => {
+    jantaFlight.phase = "idle";
+    setJantaFlightPhase("idle");
+    const nextRound = jantaFlight.pendingRound || lastJantaResult;
+    const next =
+      jantaFlight.nextTarget ??
+      nextRound?.crash ??
+      parseFloat(rand(1.45, 3.2).toFixed(2));
+    startJantaFlightRound(next, nextRound);
+  }, 2000 + rand(500, 1500));
+}
+
+function startJantaFlightRound(target, round) {
+  clearTimeout(jantaFlight.crashTimer);
+  jantaFlight.target = target;
+  jantaFlight.round = round || lastJantaResult;
+  jantaFlight.nextTarget = null;
+  jantaFlight.pendingRound = null;
+  jantaFlight.phase = "rising";
+  jantaFlight.startTime = performance.now();
+  jantaFlight.duration = flightDurationMs(target);
+  setJantaFlightPhase("rising");
+  syncJantaLiveDisplay(1);
+  scheduleJantaFlightFrame();
+}
+
+function queueJantaFlightTarget(target, round) {
+  jantaFlight.nextTarget = target;
+  jantaFlight.pendingRound = round || lastJantaResult;
+  if (jantaFlight.phase === "rising" || jantaFlight.phase === "crashed") {
+    jantaFlight.round = jantaFlight.pendingRound;
+    syncJantaLiveDisplay(getJantaFlightValue());
+    return;
+  }
+  if (jantaFlight.phase === "idle") {
+    startJantaFlightRound(target, jantaFlight.pendingRound);
+  }
+}
+
+function resetJantaFlight() {
+  cancelAnimationFrame(jantaFlight.rafId);
+  clearTimeout(jantaFlight.crashTimer);
+  jantaFlight.phase = "idle";
+  jantaFlight.nextTarget = null;
+  jantaFlight.pendingRound = null;
+  jantaFlight.round = null;
+  jantaFlight.pausedAt = 0;
+  setJantaFlightPhase("idle");
+}
+
+function pauseJantaFlight() {
+  if (jantaFlight.phase !== "rising" || jantaFlight.pausedAt) return;
+  jantaFlight.pausedAt = performance.now();
+  cancelAnimationFrame(jantaFlight.rafId);
+}
+
+function resumeJantaFlight() {
+  if (!jantaFlight.pausedAt) return;
+  jantaFlight.startTime += performance.now() - jantaFlight.pausedAt;
+  jantaFlight.pausedAt = 0;
+  if (jantaFlight.phase === "rising") scheduleJantaFlightFrame();
 }
 
 function stopLoops() {
@@ -296,90 +407,9 @@ function stopLoops() {
   loopsRunning = false;
 }
 
-function setAccessLock(locked) {
-  const gate = document.getElementById("accessGate");
-  if (!gate) return;
-  gate.hidden = !locked;
-  document.body.classList.toggle("is-locked", locked);
-}
-
-function syncAccessGate(phase, slot, now) {
-  activeAccessCode = slot.code;
-  const hint = document.getElementById("accessCodeHint");
-  const text = document.getElementById("accessGateText");
-  const errorEl = document.getElementById("accessCodeError");
-  const input = document.getElementById("accessCodeInput");
-
-  const remember = sessionStorage.getItem("aviator_access_code");
-  if (remember !== activeAccessCode) {
-    isUnlocked = false;
-    setAccessLock(true);
-  }
-
-  if (hint) hint.textContent = `Current code: ${activeAccessCode}`;
-  if (text) {
-    if (phase === "live") {
-      text.textContent = "Session is live. Enter code to open now.";
-    } else {
-      text.textContent = `Website closed. Opens at ${formatTime(slot.start)}. Enter current code to open.`;
-    }
-  }
-  if (!isUnlocked && input) {
-    input.setAttribute("placeholder", `Enter code (${activeAccessCode})`);
-  }
-  if (errorEl && isUnlocked) errorEl.textContent = "";
-  if (phase !== "live" && !isUnlocked) stopLoops();
-  if (!isUnlocked && input && document.activeElement !== input) input.focus();
-  const nextEl = document.getElementById("nextOpenTimer");
-  if (nextEl) nextEl.textContent = `Opens in ${formatCountdown(slot.start.getTime() - now.getTime())}`;
-}
-
-function initAccessGate() {
-  const form = document.getElementById("accessGateForm");
-  const input = document.getElementById("accessCodeInput");
-  const errorEl = document.getElementById("accessCodeError");
-  if (!form || !input) return;
-  setAccessLock(true);
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const submitted = input.value.trim().toUpperCase();
-    if (submitted && submitted === activeAccessCode) {
-      isUnlocked = true;
-      sessionStorage.setItem("aviator_access_code", submitted);
-      setAccessLock(false);
-      if (errorEl) errorEl.textContent = "";
-      syncLiveSchedule();
-      return;
-    }
-    if (errorEl) errorEl.textContent = "Invalid code. Please enter the current code.";
-  });
-}
-
-function syncScheduleUI(now = new Date()) {
+function syncScheduleUI() {
   const statusEl = document.getElementById("liveStatus");
-  const codeEl = document.getElementById("sessionCode");
-  const nextEl = document.getElementById("nextOpenTimer");
-  const { phase, slot } = getSessionState(now);
-  syncAccessGate(phase, slot, now);
-
-  if (phase === "live") {
-    if (statusEl) statusEl.textContent = `Live now (${formatTime(slot.start)}-${formatTime(slot.end)})`;
-    if (codeEl) codeEl.textContent = `Code ${slot.code}`;
-    if (nextEl) nextEl.textContent = `Open window ends at ${formatTime(slot.end)}`;
-    return true;
-  }
-
-  if (phase === "prelive") {
-    if (statusEl) statusEl.textContent = `Going live at ${formatTime(slot.start)}`;
-    if (codeEl) codeEl.textContent = `Upcoming code ${slot.code}`;
-    if (nextEl) nextEl.textContent = `Opens in ${formatCountdown(slot.start.getTime() - now.getTime())}`;
-    return false;
-  }
-
-  if (statusEl) statusEl.textContent = `Offline · Next ${formatTime(slot.start)}`;
-  if (codeEl) codeEl.textContent = `Next code ${slot.code}`;
-  if (nextEl) nextEl.textContent = `Opens in ${formatCountdown(slot.start.getTime() - now.getTime())}`;
-  return false;
+  if (statusEl) statusEl.textContent = "Online";
 }
 
 function renderHistory(listId, history) {
@@ -388,7 +418,7 @@ function renderHistory(listId, history) {
   ul.innerHTML = history
     .slice(-8)
     .reverse()
-    .map((v) => `<li class="${historyClass(v)}">${v.toFixed(2)}×</li>`)
+    .map((v) => `<li class="${historyClass(v)}">${v.toFixed(2)}x</li>`)
     .join("");
 }
 
@@ -436,7 +466,7 @@ function updateExtraBook(id) {
 
   setText(`${id}Crash`, crash.toFixed(2));
   setText(`${id}Confidence`, `${confidence.toFixed(0)}%`);
-  setText(`${id}Cashout`, `${cashout.toFixed(2)}×`);
+  setText(`${id}Cashout`, `${cashout.toFixed(2)}x`);
   setText(`${id}WinIndex`, `${winIndex.toFixed(1)}%`);
   const riskEl = document.getElementById(`${id}Risk`);
   if (riskEl) {
@@ -472,7 +502,7 @@ function updateAllExtraBooks() {
 
 function buildJantaTip(result) {
   return (
-    `🔥 JANTA.KE AVIATOR — #1 PICK\n` +
+    `HOT JANTA.KE AVIATOR - #1 PICK\n` +
     `Cash out near: ${result.cashout.toFixed(2)}x\n` +
     `Predicted crash: ${result.crash.toFixed(2)}x\n` +
     `Confidence: ${result.confidence.toFixed(0)}% · Win index: ${result.winIndex}%\n` +
@@ -482,21 +512,19 @@ function buildJantaTip(result) {
 }
 
 function syncJantaConnect(result) {
-  setText("jantaPlayCashout", `${result.cashout.toFixed(2)}×`);
-  setText("jantaPlayCrash", `${result.crash.toFixed(2)}×`);
-
-  const playBtn = document.getElementById("jantaPlayBtn");
   const roomBtn = document.getElementById("jantaRoomPlayBtn");
-  [playBtn, roomBtn].forEach((el) => {
-    if (el) el.href = JANTA_AVIATOR_URL;
-  });
+  const advertBtn = document.getElementById("jantaAdvertJoinBtn");
+  const playBtn = document.getElementById("jantaPlayBtn");
+  if (roomBtn) roomBtn.href = JANTA_AVIATOR_URL;
+  if (advertBtn) advertBtn.href = JANTA_GAMES_URL;
+  if (playBtn) playBtn.href = JANTA_GAMES_URL;
 
   const hype = document.getElementById("jantaHypeText");
   if (hype) {
     const line =
       result.confidence >= 75
-        ? `Live signal is <strong>on fire</strong> — ${result.confidence.toFixed(0)}% confidence. Janta.ke beats Betika on every metric right now.`
-        : `Engine rated <strong>Janta.ke #1</strong> — ${result.winIndex}% win index, safer cash-out than Betika rooms.`;
+        ? `Live signal is <strong>on fire</strong> - ${result.confidence.toFixed(0)}% confidence. Janta.ke beats Betika on every metric right now.`
+        : `Engine rated <strong>Janta.ke #1</strong> - ${result.winIndex}% win index, safer cash-out than Betika rooms.`;
     hype.innerHTML = line;
   }
 
@@ -504,7 +532,7 @@ function syncJantaConnect(result) {
   if (status) {
     const opened = sessionStorage.getItem("janta_last_open");
     status.innerHTML = opened
-      ? `<span class="janta-connect__dot janta-connect__dot--synced"></span> Janta opened — <strong>use ${result.cashout.toFixed(2)}× cash-out</strong>`
+      ? `<span class="janta-connect__dot janta-connect__dot--synced"></span> Janta opened - <strong>use ${result.cashout.toFixed(2)}x cash-out</strong>`
       : `<span class="janta-connect__dot"></span> Linked to <a href="${JANTA_AVIATOR_URL}" target="_blank" rel="noopener noreferrer">Janta Aviator</a>`;
   }
 }
@@ -524,7 +552,7 @@ async function copyJantaTip(result) {
     const btn = document.getElementById("jantaCopyBtn");
     if (btn) {
       const prev = btn.textContent;
-      btn.textContent = "Copied! 🔥";
+      btn.textContent = "Copied!";
       setTimeout(() => { btn.textContent = prev; }, 1500);
     }
     if (navigator.vibrate) navigator.vibrate(8);
@@ -534,10 +562,16 @@ async function copyJantaTip(result) {
 }
 
 function initJantaConnect() {
+  document.getElementById("jantaAdvertJoinBtn")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.open(JANTA_GAMES_URL, "_blank", "noopener,noreferrer");
+    if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+  });
+
   document.getElementById("jantaPlayBtn")?.addEventListener("click", (e) => {
     e.preventDefault();
-    if (lastJantaResult) openJantaAviator(lastJantaResult);
-    else window.open(JANTA_AVIATOR_URL, "_blank", "noopener,noreferrer");
+    window.open(JANTA_GAMES_URL, "_blank", "noopener,noreferrer");
+    if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
   });
 
   document.getElementById("jantaRoomPlayBtn")?.addEventListener("click", (e) => {
@@ -574,10 +608,8 @@ function updateJanta() {
   };
   lastJantaResult = result;
   syncJantaConnect(result);
+  queueJantaFlightTarget(crash, result);
 
-  setText("jantaCrash", crash.toFixed(2));
-  setText("jantaConfidence", `${confidence.toFixed(0)}%`);
-  setText("jantaCashout", `${cashout.toFixed(2)}×`);
   setText("jantaWinIndex", `${winIndex}%`);
 
   const riskEl = document.getElementById("jantaRisk");
@@ -592,12 +624,6 @@ function updateJanta() {
   setText("jantaMomentumVal", `${momentum.toFixed(0)}%`);
   setBar("jantaVolatility", volatility);
   setText("jantaVolatilityVal", `${volatility.toFixed(0)}%`);
-
-  const sigEl = document.getElementById("jantaSignal");
-  if (sigEl) {
-    sigEl.textContent = signal.text;
-    sigEl.className = `action-signal ${signal.cls}`;
-  }
 
   renderHistory("jantaHistory", state.janta.history);
 
@@ -615,7 +641,7 @@ function renderRoomsOverview(roomResults) {
       return `
         <button type="button" class="room-chip${active}${hot}" data-room="${r.roomId}" aria-label="${r.name} ${r.crash}x">
           <span class="room-chip__name">${r.name}</span>
-          <span class="room-chip__crash">${r.crash.toFixed(2)}×</span>
+          <span class="room-chip__crash">${r.crash.toFixed(2)}x</span>
           <span class="room-chip__conf">${r.confidence.toFixed(0)}%</span>
         </button>`;
     })
@@ -648,10 +674,10 @@ function syncBetikaConnect(roomResult) {
 
   setText(
     "betikaRoomHint",
-    `${cfg.name} → In Betika Aviator, select ${cfg.inGameServer} (same as our ${cfg.server}).`
+    `${cfg.name} -> In Betika Aviator, select ${cfg.inGameServer} (same as our ${cfg.server}).`
   );
-  setText("betikaPlayCashout", `${roomResult.cashout.toFixed(2)}×`);
-  setText("betikaPlayCrash", `${roomResult.crash.toFixed(2)}×`);
+  setText("betikaPlayCashout", `${roomResult.cashout.toFixed(2)}x`);
+  setText("betikaPlayCrash", `${roomResult.crash.toFixed(2)}x`);
 
   const status = document.getElementById("betikaLinkStatus");
   if (status) {
@@ -714,7 +740,7 @@ function updateBetikaDetail(roomResult) {
   setText("betikaHistoryLabel", cfg.name);
   setText("betikaCrash", roomResult.crash.toFixed(2));
   setText("betikaConfidence", `${roomResult.confidence.toFixed(0)}%`);
-  setText("betikaCashout", `${roomResult.cashout.toFixed(2)}×`);
+  setText("betikaCashout", `${roomResult.cashout.toFixed(2)}x`);
 
   const riskEl = document.getElementById("betikaRisk");
   if (riskEl) {
@@ -763,10 +789,10 @@ function updateAllBetikaRooms() {
   const active = results.find((r) => r.roomId === state.betika.activeRoom) || results[0];
   updateBetikaDetail(active);
 
-  setText("cmpRoom1", `${results[0].crash.toFixed(2)}× · ${results[0].confidence.toFixed(0)}%`);
-  setText("cmpRoom2", `${results[1].crash.toFixed(2)}× · ${results[1].confidence.toFixed(0)}%`);
-  setText("cmpRoom3", `${results[2].crash.toFixed(2)}× · ${results[2].confidence.toFixed(0)}%`);
-  setText("cmpBestRoom", `${best.name} (${best.server}) — ${best.winIndex}% win index`);
+  setText("cmpRoom1", `${results[0].crash.toFixed(2)}x · ${results[0].confidence.toFixed(0)}%`);
+  setText("cmpRoom2", `${results[1].crash.toFixed(2)}x · ${results[1].confidence.toFixed(0)}%`);
+  setText("cmpRoom3", `${results[2].crash.toFixed(2)}x · ${results[2].confidence.toFixed(0)}%`);
+  setText("cmpBestRoom", `${best.name} (${best.server}) - ${best.winIndex}% win index`);
 
   const avgCrash = results.reduce((s, r) => s + r.crash, 0) / results.length;
   const avgConf = results.reduce((s, r) => s + r.confidence, 0) / results.length;
@@ -776,42 +802,16 @@ function updateAllBetikaRooms() {
 }
 
 function updateGlobal(janta, betika, extra) {
-  const blendedCrash = (
-    janta.crash * 0.4 +
-    betika.avgCrash * 0.35 +
-    extra.avgCrash * 0.25
-  ).toFixed(2);
-  const blendedConf = janta.confidence * 0.45 + betika.avgConf * 0.35 + extra.avgConf * 0.2;
-  const blendedCash = (
-    janta.cashout * 0.4 +
-    betika.results[0].cashout * 0.15 +
-    betika.results[1].cashout * 0.1 +
-    betika.results[2].cashout * 0.1 +
-    extra.results[0].cashout * 0.1 +
-    extra.results[1].cashout * 0.08 +
-    extra.results[2].cashout * 0.07
-  ).toFixed(2);
-  const signalStrength =
-    blendedConf >= 75 ? "Strong" : blendedConf >= 65 ? "Moderate" : "Fair";
-
-  const globalEl = document.getElementById("globalCrash");
-  if (globalEl) globalEl.textContent = blendedCrash;
-
-  setText("globalConfidence", `${blendedConf.toFixed(0)}%`);
-  setText("globalCashout", `${blendedCash}×`);
-  setText("globalSignal", signalStrength);
-  setBar("globalBar", blendedConf);
-
   setText("cmpWinJanta", `${janta.winIndex}%`);
   setText("cmpWinBetika", `${betika.avgWin.toFixed(1)}% avg`);
   setText("cmpWinSportpesa", `${extra.results[0].winIndex.toFixed(1)}%`);
   setText("cmpWinMozzart", `${extra.results[1].winIndex.toFixed(1)}%`);
   setText("cmpWinOdibets", `${extra.results[2].winIndex.toFixed(1)}%`);
-  setText("cmpCrashJanta", `${janta.crash.toFixed(2)}×`);
-  setText("cmpCrashBetika", `${betika.best.crash.toFixed(2)}× best`);
-  setText("cmpCrashSportpesa", `${extra.results[0].crash.toFixed(2)}×`);
-  setText("cmpCrashMozzart", `${extra.results[1].crash.toFixed(2)}×`);
-  setText("cmpCrashOdibets", `${extra.results[2].crash.toFixed(2)}×`);
+  setText("cmpCrashJanta", `${janta.crash.toFixed(2)}x`);
+  setText("cmpCrashBetika", `${betika.best.crash.toFixed(2)}x best`);
+  setText("cmpCrashSportpesa", `${extra.results[0].crash.toFixed(2)}x`);
+  setText("cmpCrashMozzart", `${extra.results[1].crash.toFixed(2)}x`);
+  setText("cmpCrashOdibets", `${extra.results[2].crash.toFixed(2)}x`);
 }
 
 function runPrediction(animate = true) {
@@ -850,6 +850,7 @@ function simulateRounds() {
 }
 
 function refreshPredictions() {
+  resetJantaFlight();
   state.janta.history = generateHistory(PLATFORMS.janta);
   ROOM_IDS.forEach((id) => {
     state.betika.rooms[id].history = generateHistory(getRoomConfig(id));
@@ -968,12 +969,10 @@ function startLoops() {
 }
 
 function syncLiveSchedule() {
-  const shouldRun = syncScheduleUI(new Date());
-  if (shouldRun && isUnlocked && !loopsRunning) {
+  syncScheduleUI();
+  if (!loopsRunning) {
     runPrediction(false);
     startLoops();
-  } else if ((!shouldRun || !isUnlocked) && loopsRunning) {
-    stopLoops();
   }
 }
 
@@ -987,7 +986,6 @@ function init() {
   });
 
   initRoomTabs();
-  initAccessGate();
   initJantaConnect();
   initBetikaConnect();
   runPrediction(false);
@@ -998,13 +996,14 @@ function init() {
   syncLiveSchedule();
 
   clockTimer = setInterval(updateClock, 1000);
-  scheduleTimer = setInterval(syncLiveSchedule, 1000);
   document.getElementById("refreshBtn")?.addEventListener("click", refreshPredictions);
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      pauseJantaFlight();
       stopLoops();
     } else {
+      resumeJantaFlight();
       syncLiveSchedule();
     }
   });

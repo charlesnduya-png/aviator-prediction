@@ -1,7 +1,7 @@
 {
   "name": "Aviator Pro Predictor",
   "short_name": "Aviator Pro",
-  "description": "Betika & Janta.ke crash predictions — next plane crash intelligence",
+  "description": "Aviator crash predictions for Betika and Janta.ke — next plane crash signals",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

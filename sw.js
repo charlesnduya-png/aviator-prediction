@@ -1,18 +1,14 @@
-const CACHE = "aviator-pro-final-v1";
-const ASSETS = [
-  "./",
+const CACHE = "pilot-ke-hub-v31";
+const SHELL = [
   "./index.html",
   "./styles.css",
   "./app.js",
-  "./scan.html",
   "./manifest.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting())
   );
 });
 
@@ -26,18 +22,24 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
+  const url = new URL(event.request.url);
+  const isShell =
+    url.pathname.endsWith("/") ||
+    url.pathname.endsWith("/index.html") ||
+    url.pathname.endsWith("/app.js") ||
+    url.pathname.endsWith("/styles.css");
+
+  if (isShell) {
+    event.respondWith(
+      fetch(event.request)
         .then((response) => {
-          if (response && response.status === 200 && response.type === "basic") {
+          if (response && response.status === 200) {
             const clone = response.clone();
             caches.open(CACHE).then((cache) => cache.put(event.request, clone));
           }
           return response;
         })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
-  );
+        .catch(() => caches.match(event.request))
+    );
+  }
 });
